@@ -1,0 +1,114 @@
+---
+title: "ISTA 320 FINAL PROJECT"
+author: "Renee Grambihler"
+date: "FALL 2021"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(tidytuesdayR)
+library(effects)
+opts_chunk$set(echo = TRUE)
+```
+
+Data is from TidyTuesday 2021-03-09:  https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-03-09
+
+This GitHub repository contains data about movies and the Bechdel Test. The Bechdel Test is meant to be a simple measure of female representation in media (novels, television shows, movies, etc). The criteria for a piece of media passing the Bechdel Test are that there must be at least two, named female characters that talk to each other about something other than a man at least once throughout the piece. 
+
+There are two data-sets about movies and the Bechdel Test in the TidyTuesday repository: `raw_bechdel` and `movies`. `raw_bechdel` has movies from 1888-2021 scored from 0-3 based on how much of the Bechdel Test they pass, with (0) being Unscored and (1) having at least two named female characters that (2) talk to each other (3) about something other than a man. `movies` contains data about movies from 1970-2013 including director, IMDB rating, movie rating (e.g. G, PG-13, R, etc.), if the movies pass or fail the Bechdel Test on a binary scale, and more. 
+
+```{r load data}
+# load bechdel datasets from TidyTuesday Repository
+tuesdata <- tidytuesdayR::tt_load('2021-03-09')
+
+# separate out raw_bechdel and movies csv's
+bechdel_data <- tuesdata$raw_bechdel
+movie_data <- tuesdata$movies
+```
+
+## How has the Bechdel Score in movies changed over time? 
+```{r Line Graph: Bechdel Score Counts Over Time}
+# visualize Bechdel Score over time
+bechdel_data %>%
+  group_by(year, rating) %>%
+  count(rating) %>%
+  ggplot(aes(x = year,
+             y = n,
+             color = as.factor(rating))) +
+  geom_line() +
+  scale_color_manual(values = brewer.pal(4, "Dark2")) +
+  ggtitle("Bechdel Test Movie Scores From 1888-2021") +
+  labs(caption = "0: Unscored \n1: At least 2 named female characters \n2: That talk to each other \n3: About something other than a man",
+       color = "Score", 
+       x = "Year", 
+       y = "Number of Movies") +
+  theme(plot.caption = element_text(hjust = 0)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(10))
+```
+
+
+## How does the IMDB rating (1-10) differ for movies that pass and movies that fail the Bechdel Test?
+```{r Bar Graph: Bechdel Score and Movie Ratings}
+# find mean and median scores by pass/fail
+central_tendancy_movie_data <- movie_data %>%
+  group_by(binary) %>%
+  summarize(mean_imdb_rating = mean(imdb_rating, na.rm = TRUE), 
+            median_imdb_rating = median(imdb_rating, na.rm = TRUE))
+
+# visualize spread of movie ratings for pass/fail movies
+movie_data %>%
+  group_by(binary) %>%
+  left_join(central_tendancy_movie_data) %>%
+  ggplot(aes(x = imdb_rating, 
+             fill = binary)) +
+  geom_bar(position = "identity", alpha=0.8) +
+  scale_color_manual(values = c("#CC79A7", "#56B4E9"), 
+                     labels = c("Fail", "Pass")) + 
+  scale_fill_manual(values = c("#CC79A7", "#56B4E9"), 
+                    labels = c("Fail", "Pass")) +
+  labs(title = "Bechdel Score and IMDB Ratings \nOf Movies From 1970-2013", 
+       caption = "mean (solid line), median (dotted line)", 
+       color = "Outcome", 
+       fill = "Outcome",
+       x = "IMDB Rating", 
+       y = "Number of Movies") +
+  scale_x_continuous(breaks = scales::breaks_pretty(10)) +
+  geom_vline(aes(xintercept = mean_imdb_rating, 
+                 color = binary)) +
+  geom_vline(aes(xintercept = median_imdb_rating, 
+                 color = binary), 
+                 linetype = "dotted")
+
+```
+
+
+## Is there a significant difference between the IMDB ratings for movies that pass and fail the Bechdel Test?
+```{r Linear Regression Effect Of Difference Between Pass/Fail IMDB Ratings}
+# create linear model of IMDB Ratings as a function of Binary Pass/Fail
+bechdel_rating_model <- movie_data %>%
+  lm(formula = imdb_rating ~ binary)
+summary(bechdel_rating_model)
+
+# visualize model 
+effect("binary", bechdel_rating_model) %>%
+  data.frame() %>%
+  ggplot(aes(y = reorder(binary, fit), 
+             x = fit, 
+             label = round(fit, digits = 3))) +
+  geom_errorbar(aes(xmin = lower, 
+                    xmax = upper), 
+                width = 0.1) +
+  geom_label() +
+  labs(y = "", 
+       x = "Ratings", 
+       title = "Difference in Mean IMDB Ratings of Movies From 1970-2013 that \nPass and Fail the Bechdel Test")
+
+```
+
+
+
+
+
+
