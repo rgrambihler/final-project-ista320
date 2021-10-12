@@ -2,7 +2,9 @@
 title: "ISTA 320 FINAL PROJECT"
 author: "Renee Grambihler"
 date: "FALL 2021"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -10,6 +12,7 @@ library(knitr)
 library(tidyverse)
 library(tidytuesdayR)
 library(effects)
+library(RColorBrewer)
 opts_chunk$set(echo = TRUE)
 ```
 
@@ -28,7 +31,10 @@ bechdel_data <- tuesdata$raw_bechdel
 movie_data <- tuesdata$movies
 ```
 
-## How has the Bechdel Score in movies changed over time? 
+
+
+How has the Bechdel Score in movies changed over time? 
+
 ```{r Line Graph: Bechdel Score Counts Over Time}
 # visualize Bechdel Score over time
 bechdel_data %>%
@@ -49,7 +55,9 @@ bechdel_data %>%
 ```
 
 
-## How does the IMDB rating (1-10) differ for movies that pass and movies that fail the Bechdel Test?
+
+How does the IMDB rating (1-10) differ for movies that pass and movies that fail the Bechdel Test?
+
 ```{r Bar Graph: Bechdel Score and Movie Ratings}
 # find mean and median scores by pass/fail
 central_tendancy_movie_data <- movie_data %>%
@@ -84,7 +92,9 @@ movie_data %>%
 ```
 
 
-## Is there a significant difference between the IMDB ratings for movies that pass and fail the Bechdel Test?
+
+Is there a significant difference between the IMDB ratings for movies that pass and fail the Bechdel Test?
+
 ```{r Linear Regression Effect Of Difference Between Pass/Fail IMDB Ratings}
 # create linear model of IMDB Ratings as a function of Binary Pass/Fail
 bechdel_rating_model <- movie_data %>%
@@ -103,7 +113,7 @@ effect("binary", bechdel_rating_model) %>%
   geom_label() +
   labs(y = "", 
        x = "Ratings", 
-       title = "Difference in Mean IMDB Ratings of Movies From 1970-2013 that \nPass and Fail the Bechdel Test")
+       title = "Difference in Mean IMDB Ratings of Movies \nFrom 1970-2013 that Pass and Fail the Bechdel Test")
 
 ```
 
